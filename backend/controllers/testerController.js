@@ -182,7 +182,10 @@ const executeTest = async (req, res) => {
             );
           };
           // schedule the update function to run every second
-          setInterval(updateStatsArray, 500);
+          const intervalId = setInterval(updateStatsArray, 1500);
+          setTimeout(() => {
+            clearInterval(intervalId);
+          }, 15000);
         }
       } else {
         // define a function to update the stats array
@@ -205,7 +208,10 @@ const executeTest = async (req, res) => {
         };
 
         // schedule the update function to run every second
-        setInterval(updateStatsArray, 500);
+        const intervalId = setInterval(updateStatsArray, 1200);
+        setTimeout(() => {
+          clearInterval(intervalId);
+        }, 15000);
       }
     } catch (err) {
       console.error(err);
@@ -228,25 +234,25 @@ const executeTest = async (req, res) => {
         .pipe(csv())
         .on("data", (row) => {
           results.push(row["success"]);
-          const rapport = new Rapport({
-            timeStamp: new Date(parseInt(row.timeStamp)),
-            elapsed: !isNaN(row.elapsed) ? parseInt(row.elapsed) : 0,
-            bytes: !isNaN(row.bytes) ? parseInt(row.bytes) : 0,
-            sentBytes: !isNaN(row.sentBytes) ? parseInt(row.sentBytes) : 0,
-            Latency: !isNaN(row.Latency) ? parseInt(row.Latency) : 0,
-            Connect: !isNaN(row.Connect) ? parseInt(row.Connect) : 0,
-            processTime:
-              !isNaN(row.elapsed) && !isNaN(row.Connect) && !isNaN(row.Latency)
-                ? parseInt(row.elapsed) * 2 -
-                  parseInt(row.Connect) -
-                  parseInt(row.Latency)
-                : 0,
-            responseCode: !isNaN(row.responseCode)
-              ? parseInt(row.responseCode)
-              : 400,
-            success: row.success === 1,
-          });
-          rapport.save().catch((error) => console.error(error));
+          // const rapport = new Rapport({
+          //   timeStamp: new Date(parseInt(row.timeStamp)),
+          //   elapsed: !isNaN(row.elapsed) ? parseInt(row.elapsed) : 0,
+          //   bytes: !isNaN(row.bytes) ? parseInt(row.bytes) : 0,
+          //   sentBytes: !isNaN(row.sentBytes) ? parseInt(row.sentBytes) : 0,
+          //   Latency: !isNaN(row.Latency) ? parseInt(row.Latency) : 0,
+          //   Connect: !isNaN(row.Connect) ? parseInt(row.Connect) : 0,
+          //   processTime:
+          //     !isNaN(row.elapsed) && !isNaN(row.Connect) && !isNaN(row.Latency)
+          //       ? parseInt(row.elapsed) * 2 -
+          //         parseInt(row.Connect) -
+          //         parseInt(row.Latency)
+          //       : 0,
+          //   responseCode: !isNaN(row.responseCode)
+          //     ? parseInt(row.responseCode)
+          //     : 400,
+          //   success: row.success === 1,
+          // });
+          // rapport.save().catch((error) => console.error(error));
         })
         .on("end", async () => {
           let majority = calculateMajority(results);

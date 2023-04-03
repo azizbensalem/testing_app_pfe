@@ -3,7 +3,7 @@ import TableComponent from "../../components/TableComponent";
 import TalanLogo from "../../assets/talan-logo.png";
 import { Button, Col, Input, Row, Select } from "antd";
 import "./historiquePage.css";
-import { AddTestModal } from "../../components/Modals";
+import { AddTestModal,  } from "../../components/Modals";
 import TesterService from "../../services/TesterServices/TesterService";
 import LayoutComponent from "../../components/LayoutComponent";
 import { FileAddOutlined } from "@ant-design/icons";
@@ -85,6 +85,7 @@ const Page = ({ role }) => {
           setModalTest(false);
         }}
       />
+      {/* <TestProgressModel  /> */}
       <TableComponent data={data} isAdminPage={false} role={role} />
     </>
   );

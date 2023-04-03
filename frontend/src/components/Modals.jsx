@@ -17,7 +17,8 @@ import "react-toastify/dist/ReactToastify.css";
 import ProfileServices from "../services/ProfileServices";
 import AdminServices from "../services/AdminServices/AdminServices";
 import TesterService from "../services/TesterServices/TesterService";
-import { CircularChart } from "./ChartsComponent";
+import { CircularChart, TestChart2 } from "./ChartsComponent";
+// import { useEffect } from "react";
 
 export const EmailModal = ({ visible, onCancel }) => {
   const [form] = Form.useForm();
@@ -397,7 +398,9 @@ export const AddTestModal = ({ visible, onCancel }) => {
   const [form] = Form.useForm();
 
   const [loading, setLoading] = useState(false);
+  const [data, setData] = useState([]);
   const [method, setMethod] = useState("");
+  const [showSecondModal, setShowSecondModal] = useState(false);
 
   const handleMethodChange = (value) => {
     setMethod(value);
@@ -406,218 +409,262 @@ export const AddTestModal = ({ visible, onCancel }) => {
 
   const onFinish = async (values) => {
     setLoading(true);
-    await TesterService.executerTest(values, file)
-      .then(() => {
-        if (values.data) onCancel();
-        toast.success("Test effectué avec succès");
-        onCancel();
-      })
-      .catch(() => {
-        toast.danger("Test echoué");
-      });
-    setLoading(false);
-    onCancel();
+    try {
+      const res = await TesterService.executerTest(values, file);
+      setShowSecondModal(true);
+      console.log(res.detail);
+      if (values.data) onCancel();
+      toast.success("Test effectué avec succès");
+      onCancel();
+
+      // Define a function to update the data every second
+      const updateData = async () => {
+        const updatedRes = await TesterService.getTestById(res._id);
+        if (updatedRes) {
+          setData(updatedRes.detail);
+        }
+      };
+
+      // Call the updateData function every second
+      const intervalId = setInterval(updateData, 1000);
+
+      // Stop updating the data after 15 seconds
+      setTimeout(() => {
+        clearInterval(intervalId);
+      }, 15000);
+    } catch (error) {
+      toast.error("Test echoué");
+    } finally {
+      setLoading(false);
+      onCancel();
+    }
   };
 
   return (
-    <Modal
-      width={1000}
-      open={visible}
-      onCancel={onCancel}
-      title={
-        <div style={{ textAlign: "center", fontSize: "24px" }}>
-          Nouveau test
-        </div>
-      }
-      footer={null}
-    >
-      <Form
-        layout="vertical"
-        enctype="multipart/form-data"
-        form={form}
-        onFinish={onFinish}
-        labelCol={{
-          span: 8,
-        }}
-        wrapperCol={{
-          span: 16,
-        }}
-        style={{
-          maxWidth: 1200,
-          marginTop: 50,
-        }}
-        initialValues={{
-          remember: true,
-        }}
-        autoComplete="off"
-        onValuesChange={(changedValues) => {
-          if (changedValues.disablePort) {
-            form.setFieldsValue({ port: 0 });
-          }
-        }}
+    <>
+      <Modal
+        width={1000}
+        open={visible}
+        onCancel={onCancel}
+        title={
+          <div style={{ textAlign: "center", fontSize: "24px" }}>
+            Nouveau test
+          </div>
+        }
+        footer={null}
       >
-        <Row>
-          <Col span={10} offset={2}>
-            <Form.Item
-              label="Nom du test"
-              name="testName"
-              rules={[
-                { required: true, message: "Veuillez saisir le nom du test !" },
-              ]}
-            >
-              <Input placeholder="Java test" type="text" name="testName" />
-            </Form.Item>
-            <Form.Item
-              label="Protocole"
-              name="protocol"
-              rules={[
-                {
-                  required: true,
-                  message: "Veuillez saisir le protocol du test !",
-                },
-              ]}
-            >
-              <Select
-                defaultValue={""}
-                placeholder="http / https / .."
-                style={{ width: "100%" }}
-                name="protocol"
-                options={[
-                  { value: "http", label: "HTTP" },
-                  { value: "https", label: "HTTPS" },
-                ]}
-              />
-            </Form.Item>
-            <Form.Item
-              label="URL"
-              name="url"
-              rules={[{ required: true, message: "Veuillez saisir l'URL !" }]}
-            >
-              <Input placeholder="google.com" type="text" name="url" />
-            </Form.Item>
-            <Form.Item label="Port" name="port">
-              <Row>
-                <Col span={8}>
-                  <Form.Item name="disablePort" valuePropName="checked" noStyle>
-                    <Checkbox>No Port</Checkbox>
-                  </Form.Item>
-                </Col>
-                <Col span={16}>
-                  <Input
-                    placeholder="8888"
-                    defaultValue={"0"}
-                    type="text"
-                    name="port"
-                    disabled={form.getFieldValue("disablePort")}
-                  />
-                </Col>
-              </Row>
-            </Form.Item>
-            <Form.Item
-              label="Upload bytecode"
-              name="file"
-              rules={[
-                { required: true, message: "Veuillez ajouter un fichier !" },
-              ]}
-            >
-              <input
-                name="file"
-                type="file"
-                accept=".class"
-                onChange={(e) => {
-                  console.log(e);
-                  setFile(e.target.files[0]);
-                }}
-              />
-            </Form.Item>
-          </Col>
-          <Col span={11} offset={1}>
-            <Form.Item
-              label="Chemin"
-              name="path"
-              rules={[
-                {
-                  required: true,
-                  message: "Veuillez saisir le chemin !",
-                },
-              ]}
-            >
-              <Input type="text" name="filename" placeholder="/about" />
-            </Form.Item>
-            <Form.Item
-              label="Nombre&nbsp;d'utilisateurs"
-              name="usersNumber"
-              rules={[
-                {
-                  required: true,
-                  message: "Veuillez saisir le nombre d'utilisateurs !",
-                },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (value > 0) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(
-                      new Error("Ce champs doit etre supérieur à zero")
-                    );
-                  },
-                }),
-              ]}
-            >
-              <Input name="usersNumber" />
-            </Form.Item>
-            <Form.Item
-              label="Méthode"
-              name="method"
-              rules={[
-                {
-                  required: true,
-                  message: "Veuillez saisir la méthode !",
-                },
-              ]}
-            >
-              <Select
-                defaultValue={""}
-                placeholder="POST GET ..."
-                style={{ width: "100%" }}
-                name="method"
-                onChange={handleMethodChange}
-                options={[
-                  { value: "get", label: "GET" },
-                  { value: "post", label: "POST" },
-                ]}
-              />
-            </Form.Item>
-            {method === "post" && (
+        <Form
+          layout="vertical"
+          enctype="multipart/form-data"
+          form={form}
+          onFinish={onFinish}
+          labelCol={{
+            span: 8,
+          }}
+          wrapperCol={{
+            span: 16,
+          }}
+          style={{
+            maxWidth: 1200,
+            marginTop: 50,
+          }}
+          initialValues={{
+            remember: true,
+          }}
+          autoComplete="off"
+          onValuesChange={(changedValues) => {
+            if (changedValues.disablePort) {
+              form.setFieldsValue({ port: 0 });
+            }
+          }}
+        >
+          <Row>
+            <Col span={10} offset={2}>
               <Form.Item
-                label="Le corps de la requête"
-                name="data"
+                label="Nom du test"
+                name="testName"
                 rules={[
                   {
                     required: true,
-                    message: "Veuillez saisir le corps en format JSON !",
+                    message: "Veuillez saisir le nom du test !",
                   },
                 ]}
               >
-                <Input.TextArea
-                  placeholder="Request body in JSON format"
-                  name="data"
-                  autoSize={{ minRows: 3, maxRows: 12 }}
+                <Input placeholder="Java test" type="text" name="testName" />
+              </Form.Item>
+              <Form.Item
+                label="Protocole"
+                name="protocol"
+                rules={[
+                  {
+                    required: true,
+                    message: "Veuillez saisir le protocol du test !",
+                  },
+                ]}
+              >
+                <Select
+                  defaultValue={""}
+                  placeholder="http / https / .."
+                  style={{ width: "100%" }}
+                  name="protocol"
+                  options={[
+                    { value: "http", label: "HTTP" },
+                    { value: "https", label: "HTTPS" },
+                  ]}
                 />
               </Form.Item>
-            )}
-            <Form.Item>
-              <Button
-                htmlType="submit"
-                style={{ backgroundColor: "green", color: "white" }}
+              <Form.Item
+                label="URL"
+                name="url"
+                rules={[{ required: true, message: "Veuillez saisir l'URL !" }]}
               >
-                {loading ? <Spin /> : "Executer le test"}
-              </Button>
-            </Form.Item>
-          </Col>
-        </Row>
-      </Form>
-    </Modal>
+                <Input placeholder="google.com" type="text" name="url" />
+              </Form.Item>
+              <Form.Item label="Port" name="port">
+                <Row>
+                  <Col span={8}>
+                    <Form.Item
+                      name="disablePort"
+                      valuePropName="checked"
+                      noStyle
+                    >
+                      <Checkbox>No Port</Checkbox>
+                    </Form.Item>
+                  </Col>
+                  <Col span={16}>
+                    <Input
+                      placeholder="8888"
+                      defaultValue={"0"}
+                      type="text"
+                      name="port"
+                      disabled={form.getFieldValue("disablePort")}
+                    />
+                  </Col>
+                </Row>
+              </Form.Item>
+              <Form.Item
+                label="Upload bytecode"
+                name="file"
+                rules={[
+                  { required: true, message: "Veuillez ajouter un fichier !" },
+                ]}
+              >
+                <input
+                  name="file"
+                  type="file"
+                  accept=".class"
+                  onChange={(e) => {
+                    console.log(e);
+                    setFile(e.target.files[0]);
+                  }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={11} offset={1}>
+              <Form.Item
+                label="Chemin"
+                name="path"
+                rules={[
+                  {
+                    required: true,
+                    message: "Veuillez saisir le chemin !",
+                  },
+                ]}
+              >
+                <Input type="text" name="filename" placeholder="/about" />
+              </Form.Item>
+              <Form.Item
+                label="Nombre&nbsp;d'utilisateurs"
+                name="usersNumber"
+                rules={[
+                  {
+                    required: true,
+                    message: "Veuillez saisir le nombre d'utilisateurs !",
+                  },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (value > 0) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(
+                        new Error("Ce champs doit etre supérieur à zero")
+                      );
+                    },
+                  }),
+                ]}
+              >
+                <Input name="usersNumber" />
+              </Form.Item>
+              <Form.Item
+                label="Méthode"
+                name="method"
+                rules={[
+                  {
+                    required: true,
+                    message: "Veuillez saisir la méthode !",
+                  },
+                ]}
+              >
+                <Select
+                  defaultValue={""}
+                  placeholder="POST GET ..."
+                  style={{ width: "100%" }}
+                  name="method"
+                  onChange={handleMethodChange}
+                  options={[
+                    { value: "get", label: "GET" },
+                    { value: "post", label: "POST" },
+                  ]}
+                />
+              </Form.Item>
+              {method === "post" && (
+                <Form.Item
+                  label="Le corps de la requête"
+                  name="data"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Veuillez saisir le corps en format JSON !",
+                    },
+                  ]}
+                >
+                  <Input.TextArea
+                    placeholder="Request body in JSON format"
+                    name="data"
+                    autoSize={{ minRows: 3, maxRows: 12 }}
+                  />
+                </Form.Item>
+              )}
+              <Form.Item>
+                <Button
+                  htmlType="submit"
+                  style={{ backgroundColor: "green", color: "white" }}
+                >
+                  {loading ? <Spin /> : "Executer le test"}
+                </Button>
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
+      </Modal>
+      {showSecondModal && (
+        <Modal
+          open={showSecondModal}
+          onCancel={() => setShowSecondModal(false)}
+          footer={null}
+          width={1000}
+        >
+          <TestChart2 values={data} />
+          <Button
+            htmlType="submit"
+            style={{ backgroundColor: "#2596be", color: "white" }}
+            onClick={onCancel}
+          >
+            Fermer
+          </Button>
+        </Modal>
+      )}
+    </>
   );
 };
 
@@ -645,7 +692,11 @@ export const TestPercentageModal = ({ visible, onCancel, percentage }) => {
       width={450}
       footer={null}
     >
-      <Row justify="center" align="middle" style={{marginTop:"25px" , marginBottom:"25"}}>
+      <Row
+        justify="center"
+        align="middle"
+        style={{ marginTop: "25px", marginBottom: "25" }}
+      >
         <Col>
           <Row justify="center">
             <Space wrap>

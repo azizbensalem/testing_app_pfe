@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from "react";
 import TableComponent from "../../components/TableComponent";
 import TalanLogo from "../../assets/talan-logo.png";
-import { Button, Col, Input, Row, Select, Space } from "antd";
+import { Button, Col, Input, Row, Select, Space, notification } from "antd";
 import "./historiquePage.css";
 import { AddTestOrPredictionModal } from "../../components/Modals";
 import TesterService from "../../services/TesterServices/TesterService";
 import LayoutComponent from "../../components/LayoutComponent";
-import { FileAddOutlined, RadarChartOutlined } from "@ant-design/icons";
+import {
+  FileAddOutlined,
+  RadarChartOutlined,
+  FileSyncOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons";
 import ProfileServices from "../../services/ProfileServices";
+import AdminServices from "../../services/AdminServices/AdminServices";
 
 const Page = ({ role }) => {
   const [modalTest, setModalTest] = useState(false);
@@ -18,6 +24,35 @@ const Page = ({ role }) => {
   const [auth, setAuth] = useState([]);
   const [data, setData] = useState([]);
   const [step, setStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = async () => {
+    setLoading(true);
+
+    try {
+      notification.info({
+        message: "Dataset est en cours de préparation",
+        duration: 5, // The notification will not auto-close
+      });
+      await AdminServices.updateDataset(); // Wait for dataset update to complete
+
+      // Simulating dataset preparation process
+      setTimeout(() => {
+        setLoading(false);
+        notification.success({
+          message: "Dataset est prêt",
+          duration: 3,
+        });
+      }, 3000); // 3 seconds delay
+    } catch (error) {
+      // Handle error if the dataset update fails
+      setLoading(false);
+      notification.error({
+        message: "Une erreur s'est produite lors de la mise à jour du dataset",
+        duration: 3,
+      });
+    }
+  };
 
   const handleFirst = () => {
     setStep(0);
@@ -85,6 +120,30 @@ const Page = ({ role }) => {
           >
             Prédiction
           </Button>
+          {role === "admin" ? (
+            <Button
+              className={!loading ? "button" : ""}
+              size="large"
+              type="primary"
+              style={{
+                float: "right",
+                backgroundColor: "#9A94C4",
+                color: "white",
+              }}
+              disabled={loading}
+              shape="round"
+              icon={
+                !loading ? (
+                  <FileSyncOutlined spin={true} />
+                ) : (
+                  <LoadingOutlined spin={true} />
+                )
+              }
+              onClick={handleClick}
+            >
+              Mettre à jour dataset
+            </Button>
+          ) : null}
         </Space>
       )}
       <Row style={{ marginBottom: "20px" }}>

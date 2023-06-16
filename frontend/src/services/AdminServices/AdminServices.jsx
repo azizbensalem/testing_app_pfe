@@ -54,12 +54,21 @@ const getTestsStatusPerUserId = async (id) => {
   });
   return result.data;
 }
+const updateDataset = async () => {
+  const result = await axios.get(`${API_URL}/update-dataset`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return result.data;
+};
 
 const AdminServices = {
   getAllUsers,
   addUser,
   deleteUserById,
-  getTestsStatusPerUserId
+  getTestsStatusPerUserId,
+  updateDataset,
 };
 
 export default AdminServices;
